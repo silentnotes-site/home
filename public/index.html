@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <title>SilentNotes</title>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      animation: fadeIn 1s ease-in-out;
+    }
+    @keyframes fadeIn {
+      0% { opacity: 0; transform: scale(0.95); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+      max-width: 450px;
+      width: 100%;
+      position: relative;
+      animation: slideIn 0.8s ease-in-out;
+      max-height: 90vh;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+    @keyframes slideIn {
+      0% { transform: translateY(-50px) scale(0.98); opacity: 0; }
+      100% { transform: translateY(0) scale(1); opacity: 1; }
+    }
+    h1, h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #333;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 10px;
+      margin: 5px 0 15px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      font-size: 16px;
+      box-sizing: border-box;
+      transition: border-color 0.3s;
+      resize: vertical;
+    }
+    input:focus, textarea:focus {
+      border-color: #6c63ff;
+      outline: none;
+      transform: scale(1.02);
+    }
+    button {
+      background: #6c63ff;
+      color: white;
+      font-size: 16px;
+      padding: 10px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: transform 0.2s, background-color 0.3s, box-shadow 0.3s;
+      margin-bottom: 10px;
+    }
+    button:hover {
+      background: #4b44d2;
+      transform: scale(1.03);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+    #home, #registerForm, #loginForm, #editForm {
+      display: none;
+      flex-direction: column;
+    }
+    .msg {
+      background: #f4f4f4;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      white-space: pre-wrap;
+      font-size: 14px;
+      line-height: 1.4;
+      display: flex;
+      flex-direction: column;
+    }
+    .link-box {
+      word-break: break-word;
+      background: #e0e0ff;
+      padding: 10px;
+      border-radius: 8px;
+      text-align: center;
+      margin-bottom: 20px;
+      user-select: all;
+      cursor: pointer;
+    }
+    .switch-text {
+      text-align: center;
+      margin-bottom: 20px;
+      font-size: 14px;
+      color: #555;
+    }
+    .switch-link {
+      color: #4677f5;
+      cursor: pointer;
+      text-decoration: underline;
+      margin-left: 5px;
+    }
+    #header {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      margin-bottom: 20px;
+      position: relative;
+    }
+    #avatar {
+      width: 40px;
+      height: 40px;
+      background: #6c63ff;
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-weight: bold;
+      font-size: 18px;
+      margin-right: 10px;
+      cursor: pointer;
+      user-select: none;
+    }
+    #arrow {
+      border: solid #6c63ff;
+      border-width: 0 2.5px 2.5px 0;
+      display: inline-block;
+      padding: 5px;
+      transform: rotate(45deg);
+      cursor: pointer;
+      transition: transform 0.2s;
+      user-select: none;
+    }
+    #arrow.open {
+      transform: rotate(-135deg);
+    }
+    #menu {
+      position: absolute;
+      top: 55px;
+      right: 0;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+      display: none;
+      width: 160px;
+      z-index: 100;
+      flex-direction: column;
+    }
+    #menu button {
+      width: 100%;
+      background: none;
+      color: #6c63ff;
+      border: none;
+      border-bottom: 1px solid #eee;
+      padding: 10px 15px;
+      font-weight: 600;
+      text-align: left;
+      cursor: pointer;
+      user-select: none;
+    }
+    #menu button:last-child {
+      color: #f44336;
+    }
+    #avatarPreview {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin: 10px auto;
+      display: block;
+    }
+  </style>
+</head>
+<body onload="init()">
+  <div class="container">
+    <div id="header" style="display:none;">
+      <div id="avatar" onclick="toggleMenu()"></div>
+      <div id="arrow" onclick="toggleMenu()"></div>
+      <div id="menu">
+        <button onclick="showEditForm()">Edit Profile</button>
+        <button onclick="logout()">Logout</button>
+      </div>
+    </div>
+    <h1>SilentNotes</h1>
+    <div id="registerForm">
+      <h2>Registrati</h2>
+      <input id="regEmail" placeholder="Email" type="email" autocomplete="email" />
+      <input id="regDisplay" placeholder="Nome visualizzato" autocomplete="name" />
+      <input id="regUser" placeholder="Username" autocomplete="username" />
+      <input id="regPass" type="password" placeholder="Password" autocomplete="new-password" />
+      <button onclick="register()">Registrati</button>
+      <div class="switch-text">Hai già un account?<span class="switch-link" onclick="showLogin()">Accedi</span></div>
+    </div>
+    <div id="loginForm">
+      <h2>Login</h2>
+      <input id="logUser" placeholder="Username" autocomplete="username" />
+      <input id="logPass" type="password" placeholder="Password" autocomplete="current-password" />
+      <button onclick="login()">Accedi</button>
+      <div class="switch-text">Non hai un account?<span class="switch-link" onclick="showRegister()">Registrati</span></div>
+    </div>
+    <div id="home">
+      <h2>Benvenuto, <span id="user"></span></h2>
+      <div class="link-box" onclick="copyLink()">Il tuo link: <br /><a id="link" target="_blank" href="#"></a></div>
+      <h3>Messaggi ricevuti:</h3>
+      <div id="messages"></div>
+    </div>
+    <div id="editForm">
+      <h2>Modifica Profilo</h2>
+      <input id="editEmail" placeholder="Nuova email" type="email" />
+      <input id="editUsername" placeholder="Nuovo username" />
+      <input id="editPassword" type="password" placeholder="Nuova password" />
+      <input id="editAvatar" type="file" accept="image/*" onchange="previewAvatar(event)" />
+      <img id="avatarPreview" src="" alt="Anteprima avatar" style="display:none;" />
+      <button onclick="saveEdit()">Salva modifiche</button>
+      <button onclick="cancelEdit()">Annulla</button>
+    </div>
+  </div>
+  <script>
+    const baseURL = location.origin;
+    function showBanScreen(ban) {
+      if (document.getElementById('banOverlay')) return;
+      const overlay = document.createElement('div');
+      overlay.id = 'banOverlay';
+      Object.assign(overlay.style, {
+        position: 'fixed', top: 0, left: 0,
+        width: '100vw', height: '100vh',
+        background: 'rgba(0,0,0,0.9)',
+        display: 'flex', flexDirection: 'column',
+        justifyContent: 'center', alignItems: 'center',
+        zIndex: '99999', textAlign: 'center',
+        fontFamily: "'Segoe UI', sans-serif", padding: '20px'
+      });
+      const h1 = document.createElement('h1');
+      h1.textContent = 'Sei stato bannato!';
+      Object.assign(h1.style, { color: 'white', marginBottom: '1rem' });
+      const p1 = document.createElement('p');
+      p1.textContent = `Motivo: ${ban.reason || 'Non specificato'}`;
+      Object.assign(p1.style, { color: 'white', marginBottom: '1rem' });
+      overlay.append(h1, p1);
+      if (!ban.inf) {
+        const expiryDate = new Date(ban.expiry);
+        const p2 = document.createElement('p');
+        p2.textContent = `Ban fino al: ${expiryDate.toLocaleString()}`;
+        Object.assign(p2.style, { color: 'white', marginBottom: '2rem' });
+        overlay.append(p2);
+        const ms = expiryDate.getTime() - Date.now();
+        if (ms > 0) {
+          setTimeout(() => {
+            if (document.body.contains(overlay)) document.body.removeChild(overlay);
+            init();
+          }, ms);
+        }
+      }
+      const btn = document.createElement('button');
+      btn.textContent = 'Logout';
+      Object.assign(btn.style, {
+        padding: '0.8rem 2rem', fontSize: '1rem',
+        background: '#f44336', color: 'white',
+        border: 'none', borderRadius: '8px', cursor: 'pointer'
+      });
+      btn.onclick = () => {
+        localStorage.clear();
+        location.reload();
+      };
+      overlay.append(btn);
+      document.body.appendChild(overlay);
+    }
+    function init() {
+      const userCode = localStorage.getItem('userCode');
+      if (!userCode) {
+        showLogin();
+        return;
+      }
+      fetch(`${baseURL}/ban-status/${userCode}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.banned && data.active) {
+            showBanScreen({ inf: data.inf, reason: data.reason, expiry: data.expiry });
+          } else {
+            const existing = document.getElementById('banOverlay');
+            if (existing) existing.remove();
+            validateAndLoad(userCode);
+          }
+        })
+        .catch(() => {
+          const existing = document.getElementById('banOverlay');
+          if (existing) existing.remove();
+          showLogin();
+        });
+      setInterval(() => {
+        const code = localStorage.getItem('userCode');
+        if (!code) return;
+        fetch(`${baseURL}/ban-status/${code}`)
+          .then(r => r.json())
+          .then(data => {
+            if (data.banned && data.active) {
+              showBanScreen({ inf: data.inf, reason: data.reason, expiry: data.expiry });
+            } else {
+              const existing = document.getElementById('banOverlay');
+              if (existing) existing.remove();
+            }
+          });
+      }, 30000);
+    }
+    function validateAndLoad(code) {
+      fetch(`${baseURL}/validate/${code}`)
+        .then(r => r.json())
+        .then(d => {
+          if (!d.valid) { logout(); return; }
+          const u = d.username;
+          const name = d.displayName;
+          localStorage.setItem('username', u);
+          localStorage.setItem('displayName', name);
+          showHeader(u, name);
+          loadHome(u);
+        })
+        .catch(() => logout());
+    }
+    function showHeader(username, displayName) {
+      ['loginForm','registerForm','editForm'].forEach(id => document.getElementById(id).style.display = 'none');
+      document.getElementById('header').style.display = 'flex';
+      document.getElementById('home').style.display = 'flex';
+      document.getElementById('user').textContent = displayName || username;
+      const avatarEl = document.getElementById('avatar');
+      fetch(`${baseURL}/get-avatar/${username}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.avatar) {
+            avatarEl.style.backgroundImage = `url(${data.avatar})`;
+            avatarEl.textContent = '';
+            avatarEl.style.backgroundSize = 'cover';
+            avatarEl.style.backgroundPosition = 'center';
+          } else {
+            avatarEl.style.backgroundImage = 'none';
+            avatarEl.textContent = (displayName || username).charAt(0).toUpperCase();
+          }
+        })
+        .catch(() => {
+          avatarEl.style.backgroundImage = 'none';
+          avatarEl.textContent = (displayName || username).charAt(0).toUpperCase();
+        });
+    }
+    function hideAll() {
+      ['loginForm','registerForm','home','editForm'].forEach(id => document.getElementById(id).style.display = 'none');
+    }
+    function logout() {
+      localStorage.clear();
+      setTimeout(() => location.reload(), 300);
+    }
+    function showRegister() {
+      hideAll();
+      document.getElementById('registerForm').style.display = 'flex';
+    }
+    function showLogin() {
+      hideAll();
+      document.getElementById('loginForm').style.display = 'flex';
+    }
+    function showEditForm() {
+      hideAll();
+      document.getElementById('editForm').style.display = 'flex';
+      const u = localStorage.getItem('username');
+      fetch(`${baseURL}/get-user/${u}`)
+        .then(r => r.json())
+        .then(data => {
+          document.getElementById('editEmail').value = data.email || '';
+          document.getElementById('editUsername').value = data.username || '';
+          const img = document.getElementById('avatarPreview');
+          if (data.avatar) {
+            img.src = data.avatar;
+            img.style.display = 'block';
+          } else img.style.display = 'none';
+        });
+    }
+    function cancelEdit() {
+      hideAll();
+      showHeader(localStorage.getItem('username'), localStorage.getItem('displayName'));
+    }
+    function register() {
+      const e = document.getElementById('regEmail').value.trim();
+      const d = document.getElementById('regDisplay').value.trim();
+      const u = document.getElementById('regUser').value.trim();
+      const p = document.getElementById('regPass').value;
+      if (!e || !d || !u || !p) {
+        Swal.fire('Errore','Compila tutti i campi.','error');
+        return;
+      }
+      fetch(`${baseURL}/register`, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({email: e, displayName: d, username: u, password: p})
+      })
+      .then(r => r.json())
+      .then(j => {
+        if (j.error) return Swal.fire('Errore', j.error, 'error');
+        localStorage.setItem('userCode', j.userCode);
+        localStorage.setItem('username', u);
+        localStorage.setItem('displayName', d);
+        showHeader(u, d);
+        loadHome(u);
+      });
+    }
+    function login() {
+      const u = document.getElementById('logUser').value.trim();
+      const p = document.getElementById('logPass').value;
+      if (!u || !p) {
+        Swal.fire('Errore','Inserisci username e password.','error');
+        return;
+      }
+      fetch(`${baseURL}/login`, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({username: u, password: p})
+      })
+      .then(r => r.json())
+      .then(j => {
+        if (j.error) return Swal.fire('Errore', j.error, 'error');
+        if (j.ban && j.ban.active === true) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Sei stato bannato',
+            html: `<b>Motivo:</b> ${j.ban.reason || 'Non specificato'}<br><b>Durata:</b> ${j.ban.inf ? 'Permanente' : `Fino al ${new Date(j.ban.expiry).toLocaleString()}`}`,
+            background: '#fff',
+            color: '#000',
+            confirmButtonColor: '#f44336'
+          });
+          return;
+        }
+        localStorage.setItem('userCode', j.userCode);
+        localStorage.setItem('username', u);
+        fetch(`${baseURL}/validate/${j.userCode}`)
+          .then(r => r.json())
+          .then(d => {
+            localStorage.setItem('displayName', d.displayName);
+            showHeader(u, d.displayName);
+            loadHome(u);
+          });
+      });
+    }
+    function loadHome(u) {
+      const link = `${baseURL}/${u}/ask`;
+      document.getElementById('link').textContent = link;
+      document.getElementById('link').href = link;
+      fetch(`${baseURL}/messages/${u}`)
+        .then(r => r.json())
+        .then(msgs => {
+          const box = document.getElementById('messages');
+          box.innerHTML = '';
+          msgs.reverse().forEach(m => {
+            const div = document.createElement('div');
+            div.className = 'msg';
+            div.textContent = `${m.text}\n(${new Date(m.time).toLocaleString()})`;
+            const b = document.createElement('button');
+            b.textContent = 'Rispondi';
+            b.onclick = () => replyPrompt(m.text);
+            div.appendChild(b);
+            box.appendChild(div);
+          });
+        });
+    }
+    function copyLink() {
+      const link = document.getElementById('link').textContent;
+      navigator.clipboard.writeText(link);
+      Swal.fire('Copiato','Link copiato negli appunti','success');
+    }
+    function previewAvatar(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = document.getElementById('avatarPreview');
+        img.src = reader.result;
+        img.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    }
+    function saveEdit() {
+      const e = document.getElementById('editEmail').value.trim();
+      const u = document.getElementById('editUsername').value.trim();
+      const p = document.getElementById('editPassword').value;
+      const f = document.getElementById('editAvatar').files[0];
+      const send = avatarBase64 => {
+        const data = { userCode: localStorage.getItem('userCode') };
+        if (e) data.email = e;
+        if (u) data.username = u;
+        if (p) data.password = p;
+        if (avatarBase64) data.avatarBase64 = avatarBase64;
+        fetch(`${baseURL}/edit-profile`, {
+          method: 'PUT',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify(data)
+        })
+        .then(r => r.json())
+        .then(d => {
+          if (d.error) Swal.fire('Errore',d.error,'error');
+          else Swal.fire('Fatto','Profilo aggiornato.','success').then(() => location.reload());
+        });
+      };
+      if (f) {
+        const reader = new FileReader();
+        reader.onload = () => send(reader.result);
+        reader.readAsDataURL(f);
+      } else send();
+    }
+    function toggleMenu() {
+      const m = document.getElementById('menu');
+      const a = document.getElementById('arrow');
+      if (m.style.display === 'block') {
+        m.style.display = 'none';
+        a.classList.remove('open');
+      } else {
+        m.style.display = 'block';
+        a.classList.add('open');
+      }
+    }
+    document.addEventListener('click', e => {
+      const m = document.getElementById('menu');
+      const av = document.getElementById('avatar');
+      const ar = document.getElementById('arrow');
+      if (!m.contains(e.target) && e.target !== av && e.target !== ar) {
+        m.style.display = 'none';
+        ar.classList.remove('open');
+      }
+    });
+    function replyPrompt(original) {
+      Swal.fire({
+        title: 'Inserisci la tua risposta',
+        input: 'text',
+        inputPlaceholder: 'Scrivi qui…',
+        showCancelButton: true,
+        confirmButtonText: 'Crea immagine',
+        background: '#fff',
+        color: '#000',
+        confirmButtonColor: '#6c63ff'
+      }).then(res => {
+        if (res.isConfirmed && res.value.trim()) generateImage(original, res.value.trim());
+      });
+    }
+    function generateImage(original, reply) {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = 600;
+      canvas.height = 900;
+      const grad = ctx.createLinearGradient(0,0,0,canvas.height);
+      grad.addColorStop(0,'#6c63ff');
+      grad.addColorStop(1,'#b993d6');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.shadowColor='rgba(0,0,0,0.5)';
+      ctx.shadowBlur=4;
+      ctx.shadowOffsetX=2;
+      ctx.shadowOffsetY=2;
+      const x=40;
+      const y=60;
+      const w=canvas.width-80;
+      const pad=20;
+      const origLines = getLines(ctx, original, w-2*pad,24,'Segoe UI');
+      const h = origLines.length*30+2*pad+30;
+      ctx.fillStyle='rgba(255,255,255,0.85)';
+      ctx.strokeStyle='#5a52d4';
+      ctx.lineWidth=3;
+      roundRect(ctx,x,y,w,h,25,true,true);
+      ctx.beginPath();
+      ctx.moveTo(x+40,y+h);
+      ctx.lineTo(x+70,y+h);
+      ctx.lineTo(x+55,y+h+20);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.shadowColor='transparent';
+      ctx.fillStyle='#6c63ff';
+      ctx.font='bold 22px Segoe UI';
+      ctx.fillText('💬 Messaggio ricevuto:',x+pad,y+30);
+      ctx.fillStyle='#333';
+      ctx.font='20px Segoe UI';
+      origLines.forEach((l,i)=> ctx.fillText(l,x+pad,y+60+i*30));
+      ctx.textAlign='center';
+      ctx.fillStyle='#fff';
+      ctx.font='bold 26px Segoe UI';
+      ctx.fillText('✍️ Risposta:',canvas.width/2,y+h+90);
+      const repLines = getLines(ctx, reply, canvas.width-80,24,'Segoe UI');
+      ctx.font='22px Segoe UI';
+      repLines.forEach((l,i)=> ctx.fillText(l,canvas.width/2,y+h+130+i*32));
+      ctx.textAlign='start';
+      const link = document.createElement('a');
+      link.download='risposta.png';
+      link.href=canvas.toDataURL('image/png');
+      link.click();
+      Swal.fire('Immagine salvata','Ora puoi usarla su WhatsApp, Snapchat o Instagram!','success');
+    }
+    function roundRect(ctx,x,y,w,h,r,fill,stroke) {
+      ctx.beginPath();
+      ctx.moveTo(x+r,y);
+      ctx.lineTo(x+w-r,y);
+      ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+      ctx.lineTo(x+w,y+h-r);
+      ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+      ctx.lineTo(x+r,y+h);
+      ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+      ctx.lineTo(x,y+r);
+      ctx.quadraticCurveTo(x,y,x+r,y);
+      ctx.closePath();
+      if(fill)ctx.fill();
+      if(stroke)ctx.stroke();
+    }
+    function getLines(ctx,text,maxW,fontSize,fontFamily) {
+      ctx.font=`${fontSize}px ${fontFamily}`;
+      const words=text.split(' ');
+      const lines=[];
+      let line='';
+      for(const w of words){
+        const test = line ? line + ' ' + w : w;
+        if(ctx.measureText(test).width>maxW&&line){
+          lines.push(line);
+          line=w;
+        } else line=test;
+      }
+      if(line) lines.push(line);
+      return lines;
+    }
+  </script>
+</body>
+</html>

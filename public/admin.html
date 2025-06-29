@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin Ban Menu</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      color: white;
+      padding: 30px 0;
+    }
+    #container {
+      background: white;
+      color: #333;
+      border-radius: 20px;
+      padding: 30px;
+      max-width: 500px;
+      width: 100%;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      animation: fadeIn 0.6s ease;
+    }
+    input, select {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+      transition: border-color 0.3s;
+    }
+    input:focus, select:focus {
+      border-color: #6c63ff;
+      outline: none;
+      transform: scale(1.02);
+    }
+    button {
+      padding: 12px;
+      font-size: 16px;
+      border-radius: 10px;
+      border: none;
+      background: #6c63ff;
+      color: white;
+      cursor: pointer;
+      transition: background-color 0.3s, transform 0.2s;
+    }
+    button:hover {
+      background: #4b44d2;
+      transform: scale(1.03);
+    }
+    #banForm {
+      display: none;
+      flex-direction: column;
+      gap: 15px;
+    }
+    #logoutBtn {
+      margin-top: 10px;
+      background: #f44336;
+      display: none;
+    }
+    #errorMsg {
+      color: #f44336;
+      font-weight: 600;
+      text-align: center;
+    }
+    #reportsSection {
+      display: none;
+      flex-direction: column;
+      gap: 15px;
+      margin-top: 30px;
+    }
+    #reportList > div {
+      background: #f1f1f1;
+      color: #333;
+      border-radius: 10px;
+      padding: 15px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      animation: fadeIn 0.4s ease;
+    }
+    #reportList img {
+      max-width: 100%;
+      border-radius: 8px;
+      margin-top: 10px;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <div id="loginForm">
+      <h2>Login Admin</h2>
+      <input type="text" id="adminUser" placeholder="Username" autocomplete="username" />
+      <input type="password" id="adminPass" placeholder="Password" autocomplete="current-password" />
+      <button onclick="adminLogin()">Accedi</button>
+      <p id="errorMsg"></p>
+    </div>
+
+    <form id="banForm">
+      <h2>Ban User</h2>
+      <input type="text" id="banUsername" placeholder="Username da bannare" required />
+      <input type="text" id="banReason" placeholder="Motivo del ban" required />
+      <select id="banDuration" required>
+        <option value="" disabled selected>Durata del ban</option>
+        <option value="1h">1 ora</option>
+        <option value="24h">24 ore</option>
+        <option value="7d">7 giorni</option>
+        <option value="30d">30 giorni</option>
+        <option value="inf">Permanente</option>
+      </select>
+      <button type="button" onclick="banUser()">Esegui ban</button>
+    </form>
+
+    <button id="logoutBtn" onclick="logout()">Logout</button>
+
+    <div id="reportsSection">
+      <h2>Segnalazioni Ricevute</h2>
+      <div id="reportList"></div>
+    </div>
+  </div>
+
+  <script>
+    const baseURL = location.origin;
+
+    function showError(text) {
+      document.getElementById('errorMsg').textContent = text;
+    }
+
+    function clearError() {
+      showError('');
+    }
+
+    function saveAdminSession(username, userCode) {
+      localStorage.setItem('adminUser', username);
+      localStorage.setItem('adminCode', userCode);
+    }
+
+    function clearAdminSession() {
+      localStorage.removeItem('adminUser');
+      localStorage.removeItem('adminCode');
+    }
+
+    function getAdminSession() {
+      return {
+        username: localStorage.getItem('adminUser'),
+        userCode: localStorage.getItem('adminCode')
+      };
+    }
+
+    async function adminLogin() {
+      clearError();
+      const user = document.getElementById('adminUser').value.trim();
+      const pass = document.getElementById('adminPass').value.trim();
+      if (!user || !pass) {
+        showError('Inserisci username e password');
+        return;
+      }
+      try {
+        const res = await fetch(baseURL + '/login', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ username: user, password: pass })
+        });
+        const data = await res.json();
+        if (data.error) return showError(data.error);
+        if (user.toLowerCase() !== 'tutuu666kteam') return showError('Accesso negato: non sei admin');
+        saveAdminSession(user, data.userCode);
+        document.getElementById('loginForm').style.display = 'none';
+        document.getElementById('banForm').style.display = 'flex';
+        document.getElementById('logoutBtn').style.display = 'block';
+        loadReports();
+      } catch {
+        showError('Errore di rete, riprova');
+      }
+    }
+
+    async function banUser() {
+      clearError();
+      const username = document.getElementById('banUsername').value.trim();
+      const reason = document.getElementById('banReason').value.trim();
+      let duration = document.getElementById('banDuration').value;
+      if (!username || !reason || !duration) return alert('Compila tutti i campi');
+      if (duration !== 'inf') {
+        const now = new Date();
+        if (duration === '1h') now.setHours(now.getHours() + 1);
+        if (duration === '24h') now.setDate(now.getDate() + 1);
+        if (duration === '7d') now.setDate(now.getDate() + 7);
+        if (duration === '30d') now.setMonth(now.getMonth() + 1);
+        duration = now.toISOString();
+      }
+      const adminSession = getAdminSession();
+      if (!adminSession.username || !adminSession.userCode) return alert('Devi essere loggato come admin');
+      try {
+        const res = await fetch(baseURL + '/ban-user', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            adminUser: adminSession.username,
+            adminCode: adminSession.userCode,
+            username,
+            reason,
+            duration
+          })
+        });
+        const data = await res.json();
+        if (data.error) return alert('Errore: ' + data.error);
+        alert(`Utente ${username} bannato con successo.`);
+        document.getElementById('banForm').reset();
+      } catch {
+        alert('Errore di rete');
+      }
+    }
+
+    function logout() {
+      clearAdminSession();
+      document.getElementById('loginForm').style.display = 'block';
+      document.getElementById('banForm').style.display = 'none';
+      document.getElementById('logoutBtn').style.display = 'none';
+      document.getElementById('reportsSection').style.display = 'none';
+      clearError();
+    }
+
+    async function loadReports() {
+      const container = document.getElementById('reportList');
+      container.innerHTML = 'Caricamento...';
+      try {
+        const res = await fetch(baseURL + '/get-reports');
+        const data = await res.json();
+        if (!Array.isArray(data) || data.length === 0) {
+          container.innerHTML = '<p>Nessuna segnalazione trovata.</p>';
+          return;
+        }
+        container.innerHTML = '';
+        data.reverse().forEach(r => {
+          const card = document.createElement('div');
+          const [categoria, ...motivoParts] = r.reason.split(':');
+          const motivo = motivoParts.join(':').trim();
+          card.innerHTML = `
+            <strong>Utente Segnalato:</strong> @${r.target}<br>
+            <strong>Categoria:</strong> ${categoria || 'n/d'}<br>
+            <strong>Motivo:</strong> ${motivo || 'Nessuna descrizione'}<br>
+            <strong>Segnalato da:</strong> ${r.reporter}<br>
+            ${r.proofImage ? `<img src="${r.proofImage}" alt="Prova">` : ''}
+          `;
+          container.appendChild(card);
+        });
+        document.getElementById('reportsSection').style.display = 'flex';
+      } catch {
+        container.innerHTML = '<p>Errore durante il caricamento delle segnalazioni.</p>';
+      }
+    }
+
+    window.onload = () => {
+      const session = getAdminSession();
+      if (session.username && session.userCode && session.username.toLowerCase() === 'tutuu666kteam') {
+        document.getElementById('loginForm').style.display = 'none';
+        document.getElementById('banForm').style.display = 'flex';
+        document.getElementById('logoutBtn').style.display = 'block';
+        loadReports();
+      } else {
+        clearAdminSession();
+      }
+    };
+  </script>
+</body>
+</html>
