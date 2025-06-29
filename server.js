@@ -2,8 +2,8 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const serverless = require('serverless-http');
 const app = express();
-const PORT = process.env.PORT || 3000;
 
 app.use(express.json({ limit: '20mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
@@ -202,7 +202,6 @@ app.post('/ban-user', (req, res) => {
   if (!user) return res.json({ error: 'Utente non trovato' });
 
   const bans = cleanupExpiredBans();
-
   if (bans.find(b => b.username.toLowerCase() === username.toLowerCase())) {
     return res.json({ error: 'Utente già bannato' });
   }
@@ -235,7 +234,6 @@ app.get('/ban-status/:code', (req, res) => {
   }
 });
 
-// Endpoint per le segnalazioni
 app.post('/report', (req, res) => {
   const { reporterUsername, reportedUsername, category, description, proofBase64 } = req.body;
   if (!reporterUsername || !reportedUsername || !category || !description) {
@@ -284,10 +282,8 @@ app.get('/:username/ask', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'ask.html'));
 });
 
-app.get('admin/code/cat', (req, res) => {
+app.get('/admin/code/cat', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
-app.listen(PORT, () => {
-  console.log(`Server attivo su porta ${PORT}`);
-});
+module.exports.handler = serverless(app);
