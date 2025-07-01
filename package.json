@@ -1,11 +1,12 @@
 {
   "name": "silentnotes",
   "version": "1.0.0",
-  "main": "index.html",
+  "main": "api/index.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node api/index.js"
   },
   "dependencies": {
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "serverless-http": "^2.8.0"
   }
 }
