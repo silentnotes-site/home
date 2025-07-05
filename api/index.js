@@ -6,7 +6,6 @@ const serverless = require('serverless-http');
 const app = express();
 
 app.use(express.json({ limit: '20mb' }));
-app.use(express.static(path.join(__dirname, 'public')));
 
 const dataDir = path.join(__dirname, 'data');
 const proofsDir = path.join(dataDir, 'proofs');
@@ -282,11 +281,12 @@ app.get('/:username/ask', (req, res) => {
   res.sendFile(path.join(__dirname, 'ask.html'));
 });
 
-app.get('/admin/code/cat', (req, res) => {
+app.get('/admin/code/cat2025', (req, res) => {
   res.sendFile(path.join(__dirname, 'admin.html'));
 });
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "index.html"));
+
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 module.exports.handler = serverless(app);
