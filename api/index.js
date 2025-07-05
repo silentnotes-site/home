@@ -279,14 +279,14 @@ app.post('/report', (req, res) => {
 });
 
 app.get('/:username/ask', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'ask.html'));
+  res.sendFile(path.join(__dirname, 'ask.html'));
 });
 
 app.get('/admin/code/cat', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+  res.sendFile(path.join(__dirname, 'admin.html'));
 });
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
+  res.sendFile(path.join(__dirname, "index.html"));
 });
 
 module.exports.handler = serverless(app);
