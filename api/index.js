@@ -285,6 +285,9 @@ app.get('/:username/ask', (req, res) => {
 app.get('/admin/code/cat', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
 
 module.exports.handler = serverless(app);
 
